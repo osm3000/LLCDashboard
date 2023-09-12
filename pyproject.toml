@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dashboardlanglearner"
+version = "0.1.0"
+description = "A website to use to the functionalities of the langlearnercopilot"
+authors = ["Omar MOHAMMED"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+pymongo = "^4.5.0"
+pandas = "^2.1.0"
+streamlit = "^1.26.0"
+python-dotenv = "^1.0.0"
+langlearncopilot = "^0.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
