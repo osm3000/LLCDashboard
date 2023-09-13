@@ -24,7 +24,7 @@ def load_env():
 
 @st.cache_resource
 def database_connection():
-    client = pm.MongoClient(os.getenv("MONGO_URI"))
+    client = pm.MongoClient(os.getenv("MONGO_URI", st.secrets["MONGO_URI"]))
     db = client["langlearncopilot"]
     return db
 
@@ -32,7 +32,7 @@ def database_connection():
 # Setup global variables
 load_env()
 DB_COLLECTION = database_connection()
-MACHINE_ID = os.getenv("MACHINE_ID")
+MACHINE_ID = os.getenv("MACHINE_ID", st.secrets["MACHINE_ID"])
 
 def register_events(event:dict):
     global DB_COLLECTION
