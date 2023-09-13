@@ -6,6 +6,7 @@ import dotenv
 from langlearncopilot.generators import generate_unique_words, generate_phrases
 from langlearncopilot.parsers import get_text_from_webpage
 from langlearncopilot.utilities.save_anki_format import save_unique_words
+from langlearncopilot.llm_calls import set_credentials
 import pandas as pd
 import os
 from uuid import uuid4
@@ -22,6 +23,7 @@ st.set_page_config(
 @st.cache_data
 def load_env():
     dotenv.load_dotenv()
+    set_credentials.set_openai_key(os.getenv("OPENAI_KEY", st.secrets["OPENAI_KEY"]))
 
 @st.cache_resource
 def database_connection():
