@@ -23,7 +23,7 @@ st.set_page_config(
 @st.cache_data
 def load_env():
     dotenv.load_dotenv()
-    set_credentials.set_openai_key(st.secrets["OPENAI_API_KEY"])
+    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 @st.cache_resource
 def database_connection():
@@ -175,25 +175,28 @@ def main():
             Feature 2: For each word, generate a phrase that uses that word. This will help you understand the word in context.
             """, icon="ℹ️"
         )
-        unique_words = st.text_area("Enter the unique words (one word per line) - Max 3 words")
+        wanted_words = st.text_area("Enter the unique words (one word per line) - Max 3 words")
         language_phrases = st.selectbox("Select the text language", ["french", "spanish", "german", "italian"], index=0)
         generate_phrases_submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
             "event": {
                 "type": "generate_phrases",
                 "language": language,
-                "unique_words": unique_words,
+                "wanted_words": wanted_words,
             }
         })
     if generate_phrases_submit_button:
         st.write("Generating phrases...")
-        list_of_unique_words = unique_words.split("\n")
-        if len(list_of_unique_words) > 3: # Only take the first 3 words
-            list_of_unique_words = list_of_unique_words[:3]
+        list_of_wanted_words = wanted_words.split("\n")
+        if len(list_of_wanted_words) > 3: # Only take the first 3 words
+            list_of_wanted_words = list_of_wanted_words[:3]
+        # st.write(list_of_wanted_words)
         final_results = []
-        for word in list_of_unique_words:
-            st.write(f"Word: {word}")
+        for word in list_of_wanted_words:
+            # st.write(f"Generating phrases for {word}")
             final_results.append(pd.DataFrame(generate_phrases(word, language=language_phrases)))
+            # st.write(final_results[-1])
         final_results_df = pd.concat(final_results).reset_index(drop=True)
+        # st.write(final_results_df)
 
         columns_2 = st.columns(2)
         with columns_2[0]:
