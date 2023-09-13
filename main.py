@@ -3,13 +3,14 @@ import pandas as pd
 import numpy as np
 import pymongo as pm
 import dotenv
-from langlearncopilot.generators import generate_unique_words
+from langlearncopilot.generators import generate_unique_words, generate_phrases
 from langlearncopilot.parsers import get_text_from_webpage
 from langlearncopilot.utilities.save_anki_format import save_unique_words
 import pandas as pd
 import os
 from uuid import uuid4
 from datetime import datetime
+
 
 st.set_page_config(
     page_title="LangLearnCoPilot",
@@ -44,11 +45,14 @@ def register_events(event:dict):
     event["session_id"] = st.session_state["session_id"]
     # Add machine ID
     event["machine_id"] = MACHINE_ID
-    DB_COLLECTION["events"].insert_one(event)
+
+    if st.session_state["consent"]: # Only save if consent is given
+        DB_COLLECTION["events"].insert_one(event)
 
 @st.cache_data
 def get_text_from_website(url:str, language:str="english"):
     text = get_text_from_webpage(url)
+    st.write(text)
     unique_words = generate_unique_words(text, language=language)
     return unique_words
 
@@ -81,26 +85,33 @@ def sidebar():
     with st.sidebar.form("consent_form"):
         st.info(
             """
-            Are you okay if I collect usage data to improve this app? This is completely anonymous and no personal information is collected. It is mainly for my research.
+            Are you okay if I collect usage data to improve this app? This is completely anonymous and no personal information is collected. It is mainly for my research. Please remember that, since there are not accounts, the answer will be reset if you refresh the page.
             """, icon="❓"
         )
-        consent_value = st.radio("Consent to the data collection", ("Yes", "No"), index=0, key="consent", captions=("Yes I consent to the data collection", "No, I don't consent"))
+        consent_value = st.radio("Consent to the data collection", ("Yes", "No"), index=0, key="radio_consent", captions=("Yes I consent to the data collection", "No, I don't consent"))
         st.write(f"Consent value: {consent_value}")
         submit_consent_button = st.form_submit_button(label="Submit Consent", type="primary")
         if submit_consent_button: # TODO: This is not working properly yet
-            # st.session_state.consent = consent_value
+            
+            bool_consent_value = True if consent_value == "Yes" else False
+            st.session_state["consent"] = bool_consent_value
             register_events({
                 "type": "consent_submitted",
-                "consent": consent_value
+                "consent": bool_consent_value
             })
+            st.write(f"Your consent has been submitted: {consent_value}")
 
 
 
 def main():
     global DB_COLLECTION
+    st.image("./logo.png", width=200)
     st.title("Get all the words from a webpage")
 
     # Setup a session ID
+    if "consent" not in st.session_state:    
+        st.session_state["consent"] = True
+        st.experimental_rerun()
     if "session_id" not in st.session_state:
         st.session_state["session_id"] = str(uuid4())
         # Register an event
@@ -108,24 +119,27 @@ def main():
             "type": "session_start",
             "session_id": st.session_state["session_id"]
         })
-    if "consent" not in st.session_state:    
-        st.session_state["consent"] = "Yes"
 
 
     # Show the sidebar
     sidebar()
 
-    with st.form("url_form", clear_on_submit=True):
+    with st.form("webpage_parsing"):
+        st.info(
+            """
+            This app will extract all the unique words from a webpage and save them in a CSV file. You can then use this file to create flashcards to help you learn the language.
+            """, icon="ℹ️"
+        )
         url = st.text_input("Enter a URL of a webpage")
         language = st.selectbox("Select the text language", ["french", "spanish", "german", "italian"], index=0)
-        submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
+        webpage_parsing_submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
             "event": {
                 "type": "submit",
                 "url": url,
                 "language": language,
             }
         })
-    if submit_button:
+    if webpage_parsing_submit_button:
         unique_words = None
         with st.status("Processing..."):
             unique_words = get_text_from_website(url, language=language)
@@ -152,13 +166,40 @@ def main():
                 }
             )
 
+
+    with st.form("Generate Phrases"):
+        st.info(
+            """
+            For each word, generate a phrase that uses that word. This will help you understand the word in context.
+            """, icon="ℹ️"
+        )
+        unique_words = st.text_area("Enter the unique words (one word per line) - Max 3 words")
+        language_phrases = st.selectbox("Select the text language", ["french", "spanish", "german", "italian"], index=0)
+        generate_phrases_submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
+            "event": {
+                "type": "generate_phrases",
+                "language": language,
+            }
+        })
+    if generate_phrases_submit_button:
+        st.write("Generating phrases...")
+        list_of_unique_words = unique_words.split("\n")
+        if len(list_of_unique_words) > 3: # Only take the first 3 words
+            list_of_unique_words = list_of_unique_words[:3]
+        final_results = []
+        for word in list_of_unique_words:
+            st.write(f"Word: {word}")
+            final_results.append(pd.DataFrame(generate_phrases(word, language=language_phrases)))
+        st.write(pd.concat(final_results))
+
+
     # Feedback form
-    st.write("If you have any feedback, please let me know!")
     with st.form("feedback_form", clear_on_submit=True):
+        st.info("If you have any feedback, please let me know!", icon="📝")
         feedback = st.text_area("Feedback")
         name = st.text_input("Name (optional)", value="Anonymous")
         email = st.text_input("Email (optional)", value="Anonymous")
-        submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
+        feedback_form_submit_button = st.form_submit_button(label="Submit", type="primary", on_click=register_events, kwargs={
             "event": {
                 "type": "feedback",
                 "feedback": feedback,
@@ -166,7 +207,7 @@ def main():
                 "email": email
             }
         })
-    if submit_button:
+    if feedback_form_submit_button:
         st.write("Thank you for your feedback!")
         
 
