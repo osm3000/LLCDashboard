@@ -23,7 +23,7 @@ st.set_page_config(
 @st.cache_data
 def load_env():
     dotenv.load_dotenv()
-    set_credentials.set_openai_key(os.getenv("OPENAI_KEY", st.secrets["OPENAI_KEY"]))
+    set_credentials.set_openai_key(st.secrets["OPENAI_KEY"])
 
 @st.cache_resource
 def database_connection():
