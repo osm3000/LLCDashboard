@@ -127,7 +127,7 @@ def main():
     with st.form("webpage_parsing"):
         st.info(
             """
-            This app will extract all the unique words from a webpage and save them in a CSV file. You can then use this file to create flashcards to help you learn the language.
+            Feature 1: the app will extract all the unique words from a webpage and save them in a CSV file. You can then use this file to create flashcards to help you learn the language.
             """, icon="ℹ️"
         )
         url = st.text_input("Enter a URL of a webpage")
@@ -154,7 +154,7 @@ def main():
             download_btn = st.download_button(
                 label="Download data as CSV",
                 data=data_to_download,
-                file_name='flashcards.csv',
+                file_name='words_flashcards.csv',
                 mime='text/csv',
                 on_click=register_events,
                 kwargs={
@@ -170,7 +170,7 @@ def main():
     with st.form("Generate Phrases"):
         st.info(
             """
-            For each word, generate a phrase that uses that word. This will help you understand the word in context.
+            Feature 2: For each word, generate a phrase that uses that word. This will help you understand the word in context.
             """, icon="ℹ️"
         )
         unique_words = st.text_area("Enter the unique words (one word per line) - Max 3 words")
@@ -179,6 +179,7 @@ def main():
             "event": {
                 "type": "generate_phrases",
                 "language": language,
+                "unique_words": unique_words,
             }
         })
     if generate_phrases_submit_button:
@@ -190,7 +191,26 @@ def main():
         for word in list_of_unique_words:
             st.write(f"Word: {word}")
             final_results.append(pd.DataFrame(generate_phrases(word, language=language_phrases)))
-        st.write(pd.concat(final_results))
+        final_results_df = pd.concat(final_results).reset_index(drop=True)
+
+        columns_2 = st.columns(2)
+        with columns_2[0]:
+            st.write(final_results_df)
+        with columns_2[1]:
+            download_btn = st.download_button(
+                label="Download data as CSV",
+                data=final_results_df.to_csv(index=False, header=False),
+                file_name='phrases_flashcards.csv',
+                mime='text/csv',
+                on_click=register_events,
+                kwargs={
+                    "event": {
+                        "type": "download_phrases",
+                        "url": url,
+                        "language": language,
+                    }
+                }
+            )
 
 
     # Feedback form
