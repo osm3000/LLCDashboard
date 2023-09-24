@@ -79,7 +79,7 @@ def sidebar():
     st.sidebar.info(
         """
         This app is a demo of the [LangLearnCoPilot](https://github.com/osm3000/LangLearnCopilot) - a tool to help you learn a new language.
-        To read more about the story behind this, please visit <LINK TO BLOG POST>.
+        To read more about the story behind this, [check my blog article](https://osm3000.wordpress.com/2023/09/24/french-journey-part-3/).
         Developed by [Omar Mohammed](https://www.linkedin.com/in/omar-mohammed3000/).
         """,icon="🔥"
     )
